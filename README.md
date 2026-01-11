@@ -7,7 +7,7 @@
 WzImg MCP Server is a Model Context Protocol (MCP) server that enables AI assistants (Claude, GPT, Gemini, etc.) to interact with MapleStory IMG files programmatically. 
 It provides 74 tools across 10 categories for reading, analyzing, modifying, and exporting game data.
 
-First export the .img files with (HaCreator)[https://github.com/lastbattle/Harepacker-resurrected], you will need the manifest.json!
+First export the .img files with [HaCreator](https://github.com/lastbattle/Harepacker-resurrected), you will need the manifest.json!
 
 ---
 

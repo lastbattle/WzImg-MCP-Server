@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "wzimg": {
+      "command": "dotnet",
+      "args": [ "run", "--project", "C:/MapleStory/WzImg-MCP-Server/WzImgMCP.csproj" ],
+      "env": {
+        "WZIMGMCP_DATA_PATH": "E:/MapleData"
+      }
+    }
+  }
+}

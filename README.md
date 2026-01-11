@@ -261,32 +261,23 @@ On failure:
 
 ## Response Size Optimization
 
-To minimize context window usage, many tools support compact modes and pagination. These optimizations are enabled by default.
+Tools support pagination and compact modes to minimize response size. These are enabled by default.
 
 ### Pagination
 
-Tools that return lists support `offset` and `limit` parameters with `hasMore` flag:
+Paginated responses include `offset`, `limit`, `totalCount`, and `hasMore`:
 
 ```json
-{
-  "offset": 0,
-  "limit": 50,
-  "totalCount": 150,
-  "hasMore": true,
-  "items": [...]
-}
+{ "totalCount": 150, "offset": 0, "limit": 50, "hasMore": true, "items": [...] }
 ```
 
 ### Compact Mode
 
-Many tools support `compact=true` (default) to return minimal data:
-- Search results: Only `category`, `image`, `path` (no `name`, `type`, `value`)
-- Property lists: Only `name`, `type`, `childCount` (no `value`, `hasChildren`)
-- Children: Excludes `fullPath` and `childNames`
+`compact=true` (default) returns minimal fields. Set `compact=false` for full property metadata.
 
 ### Configuration
 
-Response limits are configurable in `appsettings.json`:
+Limits are configurable in `appsettings.json`:
 
 ```json
 {
@@ -294,10 +285,8 @@ Response limits are configurable in `appsettings.json`:
     "ResponseLimits": {
       "MaxJsonResponseKB": 512,
       "MaxBase64ImageKB": 256,
-      "DefaultAnimationPageSize": 5,
       "DefaultSearchResults": 50,
-      "DefaultPropertyPageSize": 100,
-      "IncludeChildNamesDefault": false
+      "DefaultPropertyPageSize": 100
     }
   }
 }
@@ -307,243 +296,156 @@ Response limits are configurable in `appsettings.json`:
 
 ## Tool Reference
 
-### File Operations (`FileTools`)
+All tools accept `category` and `image` parameters unless noted. Paths use `/` separator (e.g., `info/bgm`).
 
-Tools for data source initialization and management.
+### File Operations
 
 | Tool | Description |
 |------|-------------|
-| `init_data_source` | Initialize IMG filesystem from directory path |
-| `scan_img_directories` | Scan for available IMG filesystems |
-| `get_data_source_info` | Get current data source metadata |
-| `list_categories` | List available categories (Map, Mob, etc.) |
-| `list_images_in_category` | List .img files in a category |
-| `get_cache_stats` | Get cache statistics |
+| `init_data_source` | Initialize data source from directory containing `manifest.json`. Params: `basePath` |
+| `scan_img_directories` | Scan directory for available data sources. Params: `path`, `recursive=true` |
+| `get_data_source_info` | Get current data source metadata and cache stats |
+| `list_categories` | List available categories (Map, Mob, Npc, etc.) |
+| `list_images_in_category` | List .img files. Params: `category`, `subdirectory?` |
+| `get_cache_stats` | Get cache hit ratio and memory usage |
 | `clear_cache` | Clear loaded image cache |
 
-**Example:**
-```
-Tool: init_data_source
-Parameters: { "basePath": "E:/MapleData" }
-Response: { "success": true, "data": { "name": "v176", "categories": ["Map", "Mob", ...] } }
-```
-
 ---
 
-### Navigation (`NavigationTools`)
-
-Tools for exploring and searching WZ data structures.
+### Navigation
 
 | Tool | Description |
 |------|-------------|
-| `get_subdirectories` | List subdirectories in category |
-| `list_properties` | List child properties of a node (paginated, compact) |
-| `get_tree_structure` | Get hierarchical property tree (depth-limited) |
-| `search_by_name` | Search properties by name pattern (paginated, compact) |
-| `search_by_value` | Search by property value (paginated, compact) |
+| `get_subdirectories` | List subdirectories in a category |
+| `list_properties` | List child properties. Params: `path?`, `compact=true`, `offset=0`, `limit=100` (max 500) |
+| `get_tree_structure` | Get property tree. Params: `path?`, `depth=2` (max 5), `maxChildrenPerNode=50` (max 200). Hard limit: 1000 nodes |
+| `search_by_name` | Search by name pattern (`*` wildcards). Params: `pattern`, `category?`, `image?`, `compact=true`, `maxResults=50` (max 200) |
+| `search_by_value` | Search by value. Params: `value`, `type?`, `category?`, `image?`, `compact=true`, `maxResults=50` (max 200) |
 | `get_property_path` | Get full path of a property |
-
-**Optimization Parameters:**
-
-| Tool | Parameters |
-|------|------------|
-| `list_properties` | `compact=true`, `offset=0`, `limit=100` (max 500) |
-| `get_tree_structure` | `depth=2` (max 5), `maxChildrenPerNode=50` (max 200) |
-| `search_by_name` | `compact=true`, `maxResults=50` (max 200) |
-| `search_by_value` | `compact=true`, `maxResults=50` (max 200) |
-
-**Example:**
-```
-Tool: search_by_name
-Parameters: { "pattern": "*attack*", "category": "Mob", "compact": true, "maxResults": 20 }
-Response: { "success": true, "data": { "matches": [{"category": "Mob", "image": "100100.img", "path": "attack1/0"}], "totalFound": 20, "truncated": false } }
-```
 
 ---
 
-### Property Access (`PropertyTools`)
-
-Tools for reading property values with type support.
+### Property Access
 
 | Tool | Description |
 |------|-------------|
 | `get_property` | Get property with full metadata |
 | `get_property_value` | Get just the value |
-| `get_string` | Get string property value |
-| `get_int` | Get integer property value |
-| `get_float` | Get float property value |
-| `get_vector` | Get vector property (X, Y) |
-| `resolve_uol` | Resolve UOL link to target |
-| `get_children` | Get child properties (paginated, compact) |
+| `get_string` | Get string value. Params: `path`, `defaultValue?` |
+| `get_int` | Get integer value. Params: `path`, `defaultValue?` |
+| `get_float` | Get float value. Params: `path`, `defaultValue?` |
+| `get_vector` | Get vector (X, Y) |
+| `resolve_uol` | Resolve UOL link to target property |
+| `get_children` | Get child properties. Params: `path?`, `compact=true`, `offset=0`, `limit=100` (max 500) |
 | `get_property_count` | Count child properties |
-| `iterate_properties` | Iterate with pagination |
-| `get_properties_batch` | Get multiple properties at once |
+| `iterate_properties` | Iterate with full metadata. Params: `path?`, `offset=0`, `limit=50` |
+| `get_properties_batch` | Batch get. Params: `requests[]` with `{category, image, path}` |
 
-**Optimization Parameters:**
-
-| Tool | Parameters |
-|------|------------|
-| `get_children` | `compact=true`, `offset=0`, `limit=100` (max 500) |
-| `iterate_properties` | `offset=0`, `limit=50` |
-
-**Property Types:**
-- `Null`, `Short`, `Int`, `Long`, `Float`, `Double`, `String`
-- `SubProperty` (container), `Canvas` (image), `Vector` (X,Y point)
-- `Sound` (audio), `UOL` (link), `Lua` (script), `Convex` (shape)
+**Property Types:** `Null`, `Short`, `Int`, `Long`, `Float`, `Double`, `String`, `SubProperty`, `Canvas`, `Vector`, `Sound`, `UOL`, `Lua`, `Convex`
 
 ---
 
-### Canvas Operations (`ImageTools`)
-
-Tools for working with images and animations.
+### Canvas Operations
 
 | Tool | Description |
 |------|-------------|
 | `get_canvas_bitmap` | Get image as base64 PNG |
-| `get_canvas_info` | Get canvas metadata (no image data) |
-| `get_canvas_origin` | Get draw offset point |
-| `get_canvas_head` | Get head position |
+| `get_canvas_info` | Get metadata (dimensions, format, origin, delay) without image data |
+| `get_canvas_origin` | Get draw offset point (X, Y) |
+| `get_canvas_head` | Get head position for character rendering |
 | `get_canvas_bounds` | Get lt/rb bounds |
-| `get_canvas_delay` | Get animation frame delay |
-| `get_animation_frames` | Get frames with metadata (paginated, metadata-only default) |
-| `list_canvas_in_image` | List all canvases in image |
-| `resolve_canvas_link` | Resolve _inlink/_outlink |
+| `get_canvas_delay` | Get frame delay in milliseconds |
+| `get_animation_frames` | Get frames. Params: `path`, `metadataOnly=true`, `offset=0`, `limit=10` (max 50). Returns `frameCount`, `totalDuration`, `hasMore` |
+| `list_canvas_in_image` | List all canvases. Params: `maxDepth=10` |
+| `resolve_canvas_link` | Resolve `_inlink`/`_outlink` references |
 
-**Optimization Parameters:**
-
-| Tool | Parameters |
-|------|------------|
-| `get_animation_frames` | `metadataOnly=true`, `offset=0`, `limit=10` (max 50) |
-
-**Animation Frame Structure (metadataOnly=true, default):**
+**Frame structure:**
 ```json
-{
-  "frameCount": 4,
-  "totalDuration": 480,
-  "offset": 0,
-  "limit": 10,
-  "hasMore": false,
-  "frames": [
-    { "index": 0, "width": 100, "height": 120, "origin": {"x": 50, "y": 100}, "delay": 120, "base64Png": null }
-  ]
-}
+{ "index": 0, "width": 100, "height": 120, "origin": {"x": 50, "y": 100}, "delay": 120, "base64Png": null }
 ```
-
-**Animation Frame Structure (metadataOnly=false):**
-```json
-{
-  "frameCount": 4,
-  "totalDuration": 480,
-  "offset": 0,
-  "limit": 10,
-  "hasMore": false,
-  "frames": [
-    { "index": 0, "width": 100, "height": 120, "origin": {"x": 50, "y": 100}, "delay": 120, "base64Png": "iVBORw0KGgo..." }
-  ]
-}
-```
+Set `metadataOnly=false` to include `base64Png` data.
 
 ---
 
-### Audio Operations (`AudioTools`)
-
-Tools for working with sound properties.
+### Audio Operations
 
 | Tool | Description |
 |------|-------------|
-| `get_sound_info` | Get sound metadata |
-| `get_sound_data` | Get raw audio as base64 |
-| `list_sounds_in_image` | List all sounds in image |
+| `get_sound_info` | Get metadata (duration, format, frequency) |
+| `get_sound_data` | Get audio as base64 |
+| `list_sounds_in_image` | List all sounds. Params: `maxDepth=10` |
 | `resolve_sound_link` | Resolve UOL to sound |
 
 ---
 
-### Export Operations (`ExportTools`)
-
-Tools for exporting data to various formats.
+### Export Operations
 
 | Tool | Description |
 |------|-------------|
-| `export_to_json` | Export property tree to JSON (size-limited) |
-| `export_to_xml` | Export property tree to XML |
-| `export_png` | Export canvas to PNG file |
-| `export_mp3` | Export sound to MP3 file |
-| `export_all_images` | Batch export all canvases |
-| `export_all_sounds` | Batch export all sounds |
-
-**Optimization Parameters:**
-
-| Tool | Parameters |
-|------|------------|
-| `export_to_json` | `maxDepth=5` (max 10), `outputPath` required for >100KB |
-
-> **Note:** `export_to_json` returns an error if inline response exceeds 100KB. Use `outputPath` for large exports.
+| `export_to_json` | Export to JSON. Params: `path`, `maxDepth=5` (max 10), `outputPath?`. Error if >100KB without `outputPath` |
+| `export_to_xml` | Export to XML file. Params: `path`, `outputPath` |
+| `export_png` | Export canvas to PNG. Params: `path`, `outputPath` |
+| `export_mp3` | Export sound to MP3. Params: `path`, `outputPath` |
+| `export_all_images` | Batch export canvases. Params: `outputPath` |
+| `export_all_sounds` | Batch export sounds. Params: `outputPath` |
 
 ---
 
-### Analysis (`AnalysisTools`)
-
-Tools for data analysis and validation.
+### Analysis
 
 | Tool | Description |
 |------|-------------|
 | `get_statistics` | Get data source statistics |
-| `get_category_summary` | Summarize a category |
+| `get_category_summary` | Summarize category (image count, size) |
 | `find_broken_uols` | Find broken UOL references |
-| `compare_properties` | Compare two property trees |
-| `get_version_info` | Get server version info |
+| `compare_properties` | Compare two properties. Params: `source{category,image,path}`, `target{...}` |
+| `get_version_info` | Get server version |
 | `validate_image` | Validate image structure |
 
 ---
 
-### Modification (`ModifyTools`)
-
-Tools for editing WZ data.
+### Modification
 
 | Tool | Description |
 |------|-------------|
 | `set_string` | Set string value |
 | `set_int` | Set integer value |
 | `set_float` | Set float value |
-| `set_vector` | Set vector (X, Y) |
-| `add_property` | Add new property |
+| `set_vector` | Set vector. Params: `path`, `x`, `y` |
+| `add_property` | Add property. Params: `path`, `name`, `type`, `value` |
 | `delete_property` | Delete property |
-| `rename_property` | Rename property |
-| `copy_property` | Deep copy property |
-| `set_canvas_bitmap` | Replace canvas image |
-| `set_canvas_origin` | Set canvas origin |
-| `import_png` | Import PNG as canvas |
-| `import_sound` | Import audio as sound |
+| `rename_property` | Rename. Params: `path`, `newName` |
+| `copy_property` | Deep copy. Params: `source{...}`, `target{...}` |
+| `set_canvas_bitmap` | Replace image. Params: `path`, `base64Png` |
+| `set_canvas_origin` | Set origin. Params: `path`, `x`, `y` |
+| `import_png` | Import PNG. Params: `path`, `pngPath` |
+| `import_sound` | Import audio. Params: `path`, `soundPath` |
 | `save_image` | Save changes to disk |
 | `discard_changes` | Revert unsaved changes |
 
 ---
 
-### Batch Operations (`BatchTools`)
-
-Tools for bulk operations.
+### Batch Operations
 
 | Tool | Description |
 |------|-------------|
-| `extract_to_img` | Extract WZ to IMG format |
-| `pack_to_wz` | Pack IMG to WZ format |
-| `batch_export_images` | Export images from category |
-| `batch_search` | Search across categories |
+| `extract_to_img` | Extract WZ to IMG. Params: `wzPath`, `outputPath` |
+| `pack_to_wz` | Pack IMG to WZ. Params: `imgPath`, `outputPath` |
+| `batch_export_images` | Export category images. Params: `category`, `outputPath` |
+| `batch_search` | Search across categories. Params: `pattern`, `categories[]`, `maxResults` |
 
 ---
 
-### Lifecycle (`LifecycleTools`)
-
-Tools for memory management.
+### Lifecycle
 
 | Tool | Description |
 |------|-------------|
 | `parse_image` | Parse image into memory |
 | `unparse_image` | Free image memory |
-| `is_image_parsed` | Check if image is parsed |
+| `is_image_parsed` | Check if parsed |
 | `get_parsed_images` | List parsed images |
-| `preload_category` | Preload all images |
-| `unload_category` | Unload all images |
+| `preload_category` | Preload all images in category |
+| `unload_category` | Unload all images in category |
 
 ---
 

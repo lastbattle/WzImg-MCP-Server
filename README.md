@@ -1,0 +1,2 @@
+# WzImg MCP Server
+

@@ -1,5 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
+using WzImgMCP.Core;
 using WzImgMCP.Server;
 using WzImgMCP.Utils;
 using MapleLib.WzLib;
@@ -21,7 +22,7 @@ public class AnalysisTools
     }
 
     [McpServerTool(Name = "get_statistics"), Description("Get overall statistics for the data source")]
-    public StatisticsResult GetStatistics()
+    public string GetStatistics()
     {
         if (!_session.IsInitialized)
         {
@@ -74,7 +75,7 @@ public class AnalysisTools
     }
 
     [McpServerTool(Name = "get_category_summary"), Description("Get a summary of a specific category")]
-    public CategorySummaryResult GetCategorySummary(
+    public string GetCategorySummary(
         [Description("Category name")] string category)
     {
         if (!_session.IsInitialized)
@@ -139,10 +140,10 @@ public class AnalysisTools
     }
 
     [McpServerTool(Name = "find_broken_uols"), Description("Find UOL references that don't resolve to valid targets")]
-    public BrokenUolsResult FindBrokenUols(
+    public string FindBrokenUols(
         [Description("Category to search (optional - searches all if not specified)")] string? category = null,
         [Description("Specific image to search (optional)")] string? image = null,
-        [Description("Maximum results to return")] int maxResults = 100)
+        [Description("Maximum results to return (default: 30)")] int maxResults = 30)
     {
         if (!_session.IsInitialized)
         {
@@ -202,7 +203,7 @@ public class AnalysisTools
     }
 
     [McpServerTool(Name = "compare_properties"), Description("Compare two property trees and find differences")]
-    public CompareResult CompareProperties(
+    public string CompareProperties(
         [Description("First category")] string category1,
         [Description("First image")] string image1,
         [Description("First path")] string path1,
@@ -252,7 +253,7 @@ public class AnalysisTools
     }
 
     [McpServerTool(Name = "get_version_info"), Description("Get version information for the current data source")]
-    public VersionInfoResult GetVersionInfo()
+    public string GetVersionInfo()
     {
         if (!_session.IsInitialized)
         {
@@ -283,7 +284,7 @@ public class AnalysisTools
     }
 
     [McpServerTool(Name = "validate_image"), Description("Validate an image structure for common issues")]
-    public ValidationResult ValidateImage(
+    public string ValidateImage(
         [Description("Category name")] string category,
         [Description("Image name")] string image)
     {
@@ -668,7 +669,7 @@ public class AnalysisTools
 
 // Result types
 
-public class StatisticsResult
+public class StatisticsResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -690,7 +691,7 @@ public class CategoryStats
     public int ParsedCount { get; set; }
 }
 
-public class CategorySummaryResult
+public class CategorySummaryResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -713,7 +714,7 @@ public class ImageSummary
     public int SoundCount { get; set; }
 }
 
-public class BrokenUolsResult
+public class BrokenUolsResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -731,7 +732,7 @@ public class BrokenUol
     public required string Reason { get; set; }
 }
 
-public class CompareResult
+public class CompareResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -749,7 +750,7 @@ public class PropertyDifference
     public string? Value2 { get; set; }
 }
 
-public class VersionInfoResult
+public class VersionInfoResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -762,7 +763,7 @@ public class VersionInfoResult
     public List<string>? Features { get; set; }
 }
 
-public class ValidationResult
+public class ValidationResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -793,3 +794,6 @@ public class ValidationIssue
     public required string Severity { get; set; }
     public required string Message { get; set; }
 }
+
+
+

@@ -1,5 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
+using WzImgMCP.Core;
 using WzImgMCP.Server;
 using MapleLib.Img;
 
@@ -19,7 +20,7 @@ public class BatchTools
     }
 
     [McpServerTool(Name = "extract_to_img"), Description("Extract WZ files to IMG filesystem format")]
-    public ExtractResult ExtractToImg(
+    public string ExtractToImg(
         [Description("Path to WZ file or directory containing WZ files")] string wzPath,
         [Description("Output directory for IMG filesystem")] string outputDir,
         [Description("Version key for WZ decryption (empty for auto-detect)")] string? versionKey = null,
@@ -57,7 +58,7 @@ public class BatchTools
     }
 
     [McpServerTool(Name = "pack_to_wz"), Description("Pack IMG filesystem back to WZ files")]
-    public PackResult PackToWz(
+    public string PackToWz(
         [Description("Path to IMG filesystem directory")] string imgPath,
         [Description("Output directory for WZ files")] string outputDir,
         [Description("WZ version to create")] int wzVersion = 83,
@@ -95,7 +96,7 @@ public class BatchTools
     }
 
     [McpServerTool(Name = "batch_export_images"), Description("Export all images from multiple categories")]
-    public BatchExportImagesResult BatchExportImages(
+    public string BatchExportImages(
         [Description("Categories to export (comma-separated, or 'all')")] string categories,
         [Description("Output directory")] string outputDir,
         [Description("Output format (png, jpg)")] string format = "png",
@@ -178,11 +179,11 @@ public class BatchTools
     }
 
     [McpServerTool(Name = "batch_search"), Description("Search across multiple categories")]
-    public BatchSearchResult BatchSearch(
+    public string BatchSearch(
         [Description("Search pattern (supports wildcards)")] string pattern,
         [Description("Categories to search (comma-separated, or 'all')")] string categories = "all",
         [Description("Search type: name, value, or both")] string searchType = "name",
-        [Description("Maximum results")] int maxResults = 100)
+        [Description("Maximum results (default: 30)")] int maxResults = 30)
     {
         if (!_session.IsInitialized)
         {
@@ -408,7 +409,7 @@ public class WzPacker
     }
 }
 
-public class ExtractionResult
+public class ExtractionResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
@@ -417,7 +418,7 @@ public class ExtractionResult
     public List<string>? Errors { get; set; }
 }
 
-public class PackingResult
+public class PackingResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
@@ -428,7 +429,7 @@ public class PackingResult
 
 // Result types
 
-public class ExtractResult
+public class ExtractResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -438,7 +439,7 @@ public class ExtractResult
     public List<string>? Errors { get; set; }
 }
 
-public class PackResult
+public class PackResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -448,7 +449,7 @@ public class PackResult
     public List<string>? Errors { get; set; }
 }
 
-public class BatchExportImagesResult
+public class BatchExportImagesResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -460,7 +461,7 @@ public class BatchExportImagesResult
     public List<string>? Failed { get; set; }
 }
 
-public class BatchSearchResult
+public class BatchSearchResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -480,3 +481,6 @@ public class BatchSearchMatch
     public required string Type { get; set; }
     public string? Value { get; set; }
 }
+
+
+

@@ -1,4 +1,4 @@
-namespace WzImgMCP.Core;
+﻿namespace WzImgMCP.Core;
 
 /// <summary>
 /// Generic result wrapper for MCP tool responses.
@@ -14,6 +14,7 @@ public class Result<T>
     public static Result<T> Ok(T data) => new() { Success = true, Data = data };
     public static Result<T> Fail(string error) => new() { Success = false, Error = error };
     public static Result<T> Fail(Exception ex) => new() { Success = false, Error = ex.Message };
+    public static implicit operator string(Result<T> value) => MarkdownResultFormatter.Format(value);
 }
 
 /// <summary>
@@ -27,6 +28,7 @@ public class Result
     public static Result Ok() => new() { Success = true };
     public static Result Fail(string error) => new() { Success = false, Error = error };
     public static Result Fail(Exception ex) => new() { Success = false, Error = ex.Message };
+    public static implicit operator string(Result value) => MarkdownResultFormatter.Format(value);
 }
 
 /// <summary>
@@ -35,3 +37,4 @@ public class Result
 public record Point2D(int X, int Y);
 public record Size2D(int Width, int Height);
 public record Rect2D(int Left, int Top, int Right, int Bottom);
+

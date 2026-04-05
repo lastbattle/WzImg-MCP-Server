@@ -1,5 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
+using WzImgMCP.Core;
 using WzImgMCP.Server;
 using MapleLib.WzLib;
 using MapleLib.WzLib.WzProperties;
@@ -20,7 +21,7 @@ public class AudioTools
     }
 
     [McpServerTool(Name = "get_sound_info"), Description("Get sound/audio metadata")]
-    public SoundInfoResult GetSoundInfo(
+    public string GetSoundInfo(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the sound")] string path)
@@ -56,7 +57,7 @@ public class AudioTools
     }
 
     [McpServerTool(Name = "get_sound_data"), Description("Get raw audio data as base64")]
-    public SoundDataResult GetSoundData(
+    public string GetSoundData(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the sound")] string path)
@@ -99,7 +100,7 @@ public class AudioTools
     }
 
     [McpServerTool(Name = "list_sounds_in_image"), Description("List all sound properties in an image")]
-    public SoundListResult ListSoundsInImage(
+    public string ListSoundsInImage(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Maximum depth to search")] int maxDepth = 10)
@@ -132,7 +133,7 @@ public class AudioTools
     }
 
     [McpServerTool(Name = "resolve_sound_link"), Description("Resolve UOL link to actual sound property")]
-    public ResolveSoundResult ResolveSoundLink(
+    public string ResolveSoundLink(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the UOL or sound")] string path)
@@ -245,7 +246,7 @@ public class AudioTools
 
 // Result types
 
-public class SoundInfoResult
+public class SoundInfoResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -255,7 +256,7 @@ public class SoundInfoResult
     public int DataSize { get; set; }
 }
 
-public class SoundDataResult
+public class SoundDataResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -266,7 +267,7 @@ public class SoundDataResult
     public string? Base64Data { get; set; }
 }
 
-public class SoundListResult
+public class SoundListResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -283,7 +284,7 @@ public class SoundEntry
     public int Frequency { get; set; }
 }
 
-public class ResolveSoundResult
+public class ResolveSoundResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -295,3 +296,6 @@ public class ResolveSoundResult
     public int DataSize { get; set; }
     public string? Base64Data { get; set; }
 }
+
+
+

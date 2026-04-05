@@ -1,7 +1,8 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using ModelContextProtocol.Server;
 using System.Drawing;
 using System.Drawing.Imaging;
-using ModelContextProtocol.Server;
+using WzImgMCP.Core;
 using WzImgMCP.Server;
 using MapleLib.WzLib;
 using MapleLib.WzLib.WzProperties;
@@ -22,7 +23,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "set_string"), Description("Set a string property value")]
-    public ModifyResult SetString(
+    public string SetString(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -61,7 +62,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "set_int"), Description("Set an integer property value")]
-    public ModifyResult SetInt(
+    public string SetInt(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -112,7 +113,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "set_float"), Description("Set a float property value")]
-    public ModifyResult SetFloat(
+    public string SetFloat(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -159,7 +160,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "set_vector"), Description("Set a vector property (X, Y)")]
-    public ModifyResult SetVector(
+    public string SetVector(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -200,7 +201,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "add_property"), Description("Add a new property to a parent")]
-    public AddPropertyResult AddProperty(
+    public string AddProperty(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Parent property path (empty for image root)")] string parentPath,
@@ -265,7 +266,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "delete_property"), Description("Delete a property")]
-    public DeleteResult DeleteProperty(
+    public string DeleteProperty(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to delete")] string path)
@@ -307,7 +308,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "rename_property"), Description("Rename a property")]
-    public RenameResult RenameProperty(
+    public string RenameProperty(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -347,7 +348,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "copy_property"), Description("Deep copy a property to another location")]
-    public CopyResult CopyProperty(
+    public string CopyProperty(
         [Description("Source category")] string srcCategory,
         [Description("Source image")] string srcImage,
         [Description("Source property path")] string srcPath,
@@ -413,7 +414,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "set_canvas_bitmap"), Description("Replace a canvas image with a new PNG")]
-    public ModifyResult SetCanvasBitmap(
+    public string SetCanvasBitmap(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path,
@@ -456,7 +457,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "set_canvas_origin"), Description("Set the origin point of a canvas")]
-    public ModifyResult SetCanvasOrigin(
+    public string SetCanvasOrigin(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path,
@@ -512,7 +513,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "import_png"), Description("Import a PNG as a new canvas property")]
-    public ImportResult ImportPng(
+    public string ImportPng(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Parent property path")] string parentPath,
@@ -580,7 +581,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "import_sound"), Description("Import audio data as a new sound property")]
-    public ImportResult ImportSound(
+    public string ImportSound(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Parent property path")] string parentPath,
@@ -643,7 +644,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "save_image"), Description("Save changes to an image to disk")]
-    public SaveResult SaveImage(
+    public string SaveImage(
         [Description("Category name")] string category,
         [Description("Image name")] string image)
     {
@@ -674,7 +675,7 @@ public class ModifyTools
     }
 
     [McpServerTool(Name = "discard_changes"), Description("Discard unsaved changes to an image")]
-    public DiscardResult DiscardChanges(
+    public string DiscardChanges(
         [Description("Category name")] string category,
         [Description("Image name")] string image)
     {
@@ -735,7 +736,7 @@ public class ModifyTools
 
 // Result types
 
-public class ModifyResult
+public class ModifyResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -744,7 +745,7 @@ public class ModifyResult
     public string? NewValue { get; set; }
 }
 
-public class AddPropertyResult
+public class AddPropertyResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -754,7 +755,7 @@ public class AddPropertyResult
     public string? FullPath { get; set; }
 }
 
-public class DeleteResult
+public class DeleteResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -762,7 +763,7 @@ public class DeleteResult
     public string? Type { get; set; }
 }
 
-public class RenameResult
+public class RenameResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -772,7 +773,7 @@ public class RenameResult
     public string? NewPath { get; set; }
 }
 
-public class CopyResult
+public class CopyResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -780,7 +781,7 @@ public class CopyResult
     public string? DestinationPath { get; set; }
 }
 
-public class ImportResult
+public class ImportResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -791,7 +792,7 @@ public class ImportResult
     public int DataSize { get; set; }
 }
 
-public class SaveResult
+public class SaveResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -799,10 +800,13 @@ public class SaveResult
     public string? Image { get; set; }
 }
 
-public class DiscardResult
+public class DiscardResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
     public string? Category { get; set; }
     public string? Image { get; set; }
 }
+
+
+

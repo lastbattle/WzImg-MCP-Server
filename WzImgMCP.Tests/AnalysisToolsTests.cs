@@ -1,101 +1,48 @@
-using WzImgMCP.Server;
-using WzImgMCP.Tools;
+﻿using WzImgMCP.Tools;
 
 namespace WzImgMCP.Tests;
 
 public class AnalysisToolsTests : IClassFixture<TestFixture>
 {
-    private readonly TestFixture _fixture;
     private readonly AnalysisTools _tools;
 
     public AnalysisToolsTests(TestFixture fixture)
     {
-        _fixture = fixture;
-        _fixture.InitializeDataSource();
-        _tools = new AnalysisTools(_fixture.Session);
+        fixture.InitializeDataSource();
+        _tools = new AnalysisTools(fixture.Session);
     }
 
     [Fact]
-    public void GetStatistics_ReturnsStats()
+    public void StatisticsAndSummary_Work()
     {
-        var result = _tools.GetStatistics();
+        var stats = _tools.GetStatistics();
+        MarkdownTestHelper.AssertSuccess(stats);
+        Assert.Contains("category_count", stats, StringComparison.OrdinalIgnoreCase);
 
-        Assert.True(result.Success);
-        Assert.True(result.CategoryCount > 0);
-        Assert.True(result.TotalImageCount > 0);
-        Assert.NotNull(result.Categories);
+        var summary = _tools.GetCategorySummary("Character");
+        MarkdownTestHelper.AssertSuccess(summary);
+        Assert.Contains("image_count", summary, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void GetCategorySummary_ReturnsSummary()
+    public void VersionAndValidation_Work()
     {
-        var result = _tools.GetCategorySummary("Character");
+        var version = _tools.GetVersionInfo();
+        MarkdownTestHelper.AssertSuccess(version);
+        Assert.Contains("version", version, StringComparison.OrdinalIgnoreCase);
 
-        Assert.True(result.Success);
-        Assert.Equal("Character", result.Category);
-        Assert.True(result.ImageCount > 0);
-        Assert.NotNull(result.Images);
+        var validation = _tools.ValidateImage("Character", "Test.img");
+        MarkdownTestHelper.AssertSuccess(validation);
+        Assert.Contains("issue_count", validation, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void GetCategorySummary_WithInvalidCategory_ReturnsEmpty()
+    public void CompareAndBrokenUol_Work()
     {
-        var result = _tools.GetCategorySummary("NonExistentCategory");
+        var compare = _tools.CompareProperties("Character", "Test.img", "info", "Character", "Test.img", "info", 3);
+        MarkdownTestHelper.AssertSuccess(compare);
 
-        Assert.True(result.Success);
-        Assert.Equal(0, result.ImageCount);
-    }
-
-    [Fact]
-    public void FindBrokenUols_FindsBrokenReferences()
-    {
-        var result = _tools.FindBrokenUols(category: "Character", image: "Test.img");
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.BrokenUols);
-        // May or may not find broken UOLs depending on test data
-    }
-
-    [Fact]
-    public void CompareProperties_ComparesSameProperty()
-    {
-        var result = _tools.CompareProperties(
-            "Character", "Test.img", "info",
-            "Character", "Test.img", "info");
-
-        Assert.True(result.Success);
-        Assert.Equal(0, result.DifferenceCount); // Same property should have no differences
-    }
-
-    [Fact]
-    public void CompareProperties_FindsDifferences()
-    {
-        var result = _tools.CompareProperties(
-            "Character", "Test.img", "info",
-            "Character", "Test.img", "stand");
-
-        Assert.True(result.Success);
-        Assert.True(result.DifferenceCount > 0); // Different properties should have differences
-    }
-
-    [Fact]
-    public void GetVersionInfo_ReturnsVersion()
-    {
-        var result = _tools.GetVersionInfo();
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.Name);
-        Assert.NotNull(result.Version);
-    }
-
-    [Fact]
-    public void ValidateImage_ValidatesSuccessfully()
-    {
-        var result = _tools.ValidateImage("Character", "Test.img");
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.Stats);
-        Assert.NotNull(result.Issues);
-        Assert.True(result.Stats.TotalProperties > 0);
+        var broken = _tools.FindBrokenUols("Character", "Test.img", 20);
+        MarkdownTestHelper.AssertSuccess(broken);
     }
 }

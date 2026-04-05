@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text.RegularExpressions;
 using ModelContextProtocol.Server;
 using WzImgMCP.Core;
@@ -18,7 +18,7 @@ public class NavigationTools : ToolBase
     public NavigationTools(WzSessionManager session) : base(session) { }
 
     [McpServerTool(Name = "get_subdirectories"), Description("List subdirectories within a category")]
-    public Result<SubdirectoryData> GetSubdirectories(
+    public string GetSubdirectories(
         [Description("Category name (e.g., 'Map', 'Mob')")] string category)
     {
         return Execute(() =>
@@ -33,13 +33,13 @@ public class NavigationTools : ToolBase
     }
 
     [McpServerTool(Name = "list_properties"), Description("List child properties of a node in an image. Use compact=true for smaller responses.")]
-    public Result<PropertyListData> ListProperties(
+    public string ListProperties(
         [Description("Category name")] string category,
         [Description("Image name (e.g., 'Map.img' or '100000000.img')")] string image,
         [Description("Property path within the image (empty for root)")] string? path = null,
         [Description("Return compact format with just names and types (default: true)")] bool compact = true,
         [Description("Offset for pagination (default: 0)")] int offset = 0,
-        [Description("Maximum properties to return (default: 100, max: 500)")] int limit = 100)
+        [Description("Maximum properties to return (default: 50, max: 500)")] int limit = 50)
     {
         return Execute(() =>
         {
@@ -78,7 +78,7 @@ public class NavigationTools : ToolBase
     }
 
     [McpServerTool(Name = "get_tree_structure"), Description("Get hierarchical property tree structure. Use shallow depth for large trees.")]
-    public Result<TreeData> GetTreeStructure(
+    public string GetTreeStructure(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path (empty for root)")] string? path = null,
@@ -110,11 +110,11 @@ public class NavigationTools : ToolBase
     }
 
     [McpServerTool(Name = "search_by_name"), Description("Search for properties by name pattern. Use compact=true for smaller responses.")]
-    public Result<SearchData> SearchByName(
+    public string SearchByName(
         [Description("Search pattern (case-insensitive, supports * wildcards)")] string pattern,
         [Description("Category to search in (optional, searches all if not specified)")] string? category = null,
         [Description("Specific image to search in (optional)")] string? image = null,
-        [Description("Maximum results to return (default: 50, max: 200)")] int maxResults = 50,
+        [Description("Maximum results to return (default: 20, max: 200)")] int maxResults = 20,
         [Description("Return compact format with paths only (default: true)")] bool compact = true)
     {
         return Execute(() =>
@@ -162,12 +162,12 @@ public class NavigationTools : ToolBase
     }
 
     [McpServerTool(Name = "search_by_value"), Description("Search for properties by value. Use compact=true for smaller responses.")]
-    public Result<SearchData> SearchByValue(
+    public string SearchByValue(
         [Description("Value to search for (string representation)")] string value,
         [Description("Property type to filter (optional: String, Int, Float, etc.)")] string? type = null,
         [Description("Category to search in (optional)")] string? category = null,
         [Description("Specific image to search in (optional)")] string? image = null,
-        [Description("Maximum results to return (default: 50, max: 200)")] int maxResults = 50,
+        [Description("Maximum results to return (default: 20, max: 200)")] int maxResults = 20,
         [Description("Return compact format with paths only (default: true)")] bool compact = true)
     {
         return Execute(() =>
@@ -214,7 +214,7 @@ public class NavigationTools : ToolBase
     }
 
     [McpServerTool(Name = "get_property_path"), Description("Get the full path of a property")]
-    public Result<PropertyPathData> GetPropertyPath(
+    public string GetPropertyPath(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path within the image")] string path)
@@ -473,3 +473,4 @@ public class PropertyPathData
     public string? FullPath { get; init; }
     public string? AbsolutePath { get; init; }
 }
+

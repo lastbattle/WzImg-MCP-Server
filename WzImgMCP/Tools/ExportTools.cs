@@ -1,7 +1,8 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
+using ModelContextProtocol.Server;
 using System.Text.Json;
 using System.Xml.Linq;
-using ModelContextProtocol.Server;
+using WzImgMCP.Core;
 using WzImgMCP.Server;
 using WzImgMCP.Utils;
 using MapleLib.WzLib;
@@ -23,7 +24,7 @@ public class ExportTools
     }
 
     [McpServerTool(Name = "export_to_json"), Description("Export a property tree to JSON format. For large exports, outputPath is required. Max inline response is 100KB.")]
-    public ExportJsonResult ExportToJson(
+    public string ExportToJson(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path (empty for entire image)")] string? path = null,
@@ -111,7 +112,7 @@ public class ExportTools
     }
 
     [McpServerTool(Name = "export_to_xml"), Description("Export a property tree to XML format")]
-    public ExportXmlResult ExportToXml(
+    public string ExportToXml(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Output file path")] string outputPath,
@@ -166,7 +167,7 @@ public class ExportTools
     }
 
     [McpServerTool(Name = "export_png"), Description("Export a canvas property to PNG file")]
-    public ExportPngResult ExportPng(
+    public string ExportPng(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path,
@@ -217,7 +218,7 @@ public class ExportTools
     }
 
     [McpServerTool(Name = "export_mp3"), Description("Export a sound property to MP3 file")]
-    public ExportMp3Result ExportMp3(
+    public string ExportMp3(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the sound")] string path,
@@ -268,7 +269,7 @@ public class ExportTools
     }
 
     [McpServerTool(Name = "export_all_images"), Description("Export all canvas properties from a path to PNG files")]
-    public BatchExportResult ExportAllImages(
+    public string ExportAllImages(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Output directory")] string outputDir,
@@ -326,7 +327,7 @@ public class ExportTools
     }
 
     [McpServerTool(Name = "export_all_sounds"), Description("Export all sound properties from a path to MP3 files")]
-    public BatchExportResult ExportAllSounds(
+    public string ExportAllSounds(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Output directory")] string outputDir,
@@ -582,7 +583,7 @@ public class ExportTools
 
 // Result types
 
-public class ExportJsonResult
+public class ExportJsonResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -593,7 +594,7 @@ public class ExportJsonResult
     public bool Truncated { get; set; }
 }
 
-public class ExportXmlResult
+public class ExportXmlResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -601,7 +602,7 @@ public class ExportXmlResult
     public long Size { get; set; }
 }
 
-public class ExportPngResult
+public class ExportPngResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -611,7 +612,7 @@ public class ExportPngResult
     public long Size { get; set; }
 }
 
-public class ExportMp3Result
+public class ExportMp3Result : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -621,7 +622,7 @@ public class ExportMp3Result
     public long Size { get; set; }
 }
 
-public class BatchExportResult
+public class BatchExportResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -644,3 +645,6 @@ public class FailedItem
     public required string Path { get; set; }
     public required string Error { get; set; }
 }
+
+
+

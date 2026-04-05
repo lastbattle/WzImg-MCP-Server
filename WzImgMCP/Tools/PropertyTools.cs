@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
 using WzImgMCP.Core;
 using WzImgMCP.Server;
@@ -17,7 +17,7 @@ public class PropertyTools : ToolBase
     public PropertyTools(WzSessionManager session) : base(session) { }
 
     [McpServerTool(Name = "get_property"), Description("Get a property with full metadata")]
-    public new Result<GetPropertyData> GetProperty(
+    public string GetProperty(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path within the image")] string path)
@@ -39,7 +39,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_property_value"), Description("Get just the value of a property")]
-    public Result<ValueData> GetPropertyValue(
+    public string GetPropertyValue(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path)
@@ -59,7 +59,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_string"), Description("Get a string property value")]
-    public Result<StringValueData> GetString(
+    public string GetString(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -79,7 +79,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_int"), Description("Get an integer property value")]
-    public Result<IntValueData> GetInt(
+    public string GetInt(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -107,7 +107,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_float"), Description("Get a float property value")]
-    public Result<FloatValueData> GetFloat(
+    public string GetFloat(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path,
@@ -135,7 +135,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_vector"), Description("Get a vector property (X, Y)")]
-    public Result<VectorData> GetVector(
+    public string GetVector(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path)
@@ -148,7 +148,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "resolve_uol"), Description("Resolve a UOL (link) property to its target")]
-    public Result<ResolveUolData> ResolveUol(
+    public string ResolveUol(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path")] string path)
@@ -172,13 +172,13 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_children"), Description("Get child properties of a node with pagination. Use compact=true for smaller responses.")]
-    public Result<ChildrenData> GetChildren(
+    public string GetChildren(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path (empty for root)")] string? path = null,
         [Description("Return compact format (default: true)")] bool compact = true,
         [Description("Offset for pagination (default: 0)")] int offset = 0,
-        [Description("Maximum children to return (default: 100, max: 500)")] int limit = 100)
+        [Description("Maximum children to return (default: 50, max: 500)")] int limit = 50)
     {
         return Execute(() =>
         {
@@ -218,7 +218,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_property_count"), Description("Count child properties of a node")]
-    public Result<CountData> GetPropertyCount(
+    public string GetPropertyCount(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path (empty for root)")] string? path = null)
@@ -238,12 +238,12 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "iterate_properties"), Description("Iterate properties with pagination")]
-    public Result<IterateData> IterateProperties(
+    public string IterateProperties(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path (empty for root)")] string? path = null,
         [Description("Offset to start from")] int offset = 0,
-        [Description("Maximum number of properties to return")] int limit = 50)
+        [Description("Maximum number of properties to return (default: 25)")] int limit = 25)
     {
         return Execute(() =>
         {
@@ -278,7 +278,7 @@ public class PropertyTools : ToolBase
     }
 
     [McpServerTool(Name = "get_properties_batch"), Description("Get multiple properties in a single request")]
-    public Result<BatchPropertiesData> GetPropertiesBatch(
+    public string GetPropertiesBatch(
         [Description("Array of property requests, each with category, image, and path")] List<PropertyRequest> requests)
     {
         return Execute(() =>
@@ -436,3 +436,4 @@ public class BatchPropertyItem
     public string? Error { get; init; }
     public PropertyData? Property { get; init; }
 }
+

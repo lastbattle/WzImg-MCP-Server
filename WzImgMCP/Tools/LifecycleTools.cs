@@ -1,5 +1,6 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
+using WzImgMCP.Core;
 using WzImgMCP.Server;
 
 namespace WzImgMCP.Tools;
@@ -18,7 +19,7 @@ public class LifecycleTools
     }
 
     [McpServerTool(Name = "parse_image"), Description("Parse an image (load properties into memory)")]
-    public ParseResult ParseImage(
+    public string ParseImage(
         [Description("Category name")] string category,
         [Description("Image name")] string image)
     {
@@ -45,7 +46,7 @@ public class LifecycleTools
     }
 
     [McpServerTool(Name = "unparse_image"), Description("Unparse an image (free memory)")]
-    public UnparseResult UnparseImage(
+    public string UnparseImage(
         [Description("Category name")] string category,
         [Description("Image name")] string image)
     {
@@ -71,7 +72,7 @@ public class LifecycleTools
     }
 
     [McpServerTool(Name = "is_image_parsed"), Description("Check if an image is currently parsed")]
-    public IsParsedResult IsImageParsed(
+    public string IsImageParsed(
         [Description("Category name")] string category,
         [Description("Image name")] string image)
     {
@@ -98,7 +99,7 @@ public class LifecycleTools
     }
 
     [McpServerTool(Name = "get_parsed_images"), Description("List all currently parsed images")]
-    public ParsedImagesResult GetParsedImages()
+    public string GetParsedImages()
     {
         if (!_session.IsInitialized)
         {
@@ -122,7 +123,7 @@ public class LifecycleTools
     }
 
     [McpServerTool(Name = "preload_category"), Description("Preload all images in a category")]
-    public PreloadResult PreloadCategory(
+    public string PreloadCategory(
         [Description("Category name")] string category)
     {
         if (!_session.IsInitialized)
@@ -166,7 +167,7 @@ public class LifecycleTools
     }
 
     [McpServerTool(Name = "unload_category"), Description("Unload all images in a category (free memory)")]
-    public UnloadResult UnloadCategory(
+    public string UnloadCategory(
         [Description("Category name")] string category)
     {
         if (!_session.IsInitialized)
@@ -204,7 +205,7 @@ public class LifecycleTools
 
 // Result types
 
-public class ParseResult
+public class ParseResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -213,7 +214,7 @@ public class ParseResult
     public int PropertyCount { get; set; }
 }
 
-public class UnparseResult
+public class UnparseResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -221,7 +222,7 @@ public class UnparseResult
     public string? Image { get; set; }
 }
 
-public class IsParsedResult
+public class IsParsedResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -230,7 +231,7 @@ public class IsParsedResult
     public bool IsParsed { get; set; }
 }
 
-public class ParsedImagesResult
+public class ParsedImagesResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -238,7 +239,7 @@ public class ParsedImagesResult
     public List<ParsedImageInfo>? Images { get; set; }
 }
 
-public class PreloadResult
+public class PreloadResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
@@ -247,10 +248,13 @@ public class PreloadResult
     public int NewlyLoaded { get; set; }
 }
 
-public class UnloadResult
+public class UnloadResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
     public string? Category { get; set; }
     public int UnloadedCount { get; set; }
 }
+
+
+

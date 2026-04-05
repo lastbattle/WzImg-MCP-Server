@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
 using WzImgMCP.Core;
 using WzImgMCP.Server;
@@ -17,7 +17,7 @@ public class ImageTools : ToolBase
     public ImageTools(WzSessionManager session) : base(session) { }
 
     [McpServerTool(Name = "get_canvas_bitmap"), Description("Get canvas image as PNG (base64 encoded)")]
-    public Result<CanvasBitmapData> GetCanvasBitmap(
+    public string GetCanvasBitmap(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -38,7 +38,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "get_canvas_info"), Description("Get canvas metadata without the actual image data")]
-    public Result<CanvasInfoData> GetCanvasInfo(
+    public string GetCanvasInfo(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -60,7 +60,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "get_canvas_origin"), Description("Get the canvas origin point (draw offset)")]
-    public Result<Point2D> GetCanvasOrigin(
+    public string GetCanvasOrigin(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -75,7 +75,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "get_canvas_delay"), Description("Get animation frame delay in milliseconds")]
-    public Result<DelayData> GetCanvasDelay(
+    public string GetCanvasDelay(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -88,13 +88,13 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "get_animation_frames"), Description("Get animation frames with metadata. Use metadataOnly=true to skip image data and reduce response size. Use offset/limit for pagination.")]
-    public Result<AnimationData> GetAnimationFrames(
+    public string GetAnimationFrames(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the animation container")] string path,
         [Description("Only return metadata without Base64 image data (default: true for smaller responses)")] bool metadataOnly = true,
         [Description("Frame offset for pagination (default: 0)")] int offset = 0,
-        [Description("Maximum frames to return (default: 10, max: 50)")] int limit = 10)
+        [Description("Maximum frames to return (default: 5, max: 50)")] int limit = 5)
     {
         return Execute(() =>
         {
@@ -148,7 +148,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "list_canvas_in_image"), Description("List all canvas properties in an image")]
-    public Result<CanvasListData> ListCanvasInImage(
+    public string ListCanvasInImage(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Maximum depth to search")] int maxDepth = 10)
@@ -170,7 +170,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "get_canvas_head"), Description("Get the canvas head position (used for character rendering)")]
-    public Result<Point2D> GetCanvasHead(
+    public string GetCanvasHead(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -185,7 +185,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "get_canvas_bounds"), Description("Get the canvas bounds (lt - left-top position)")]
-    public Result<BoundsData> GetCanvasBounds(
+    public string GetCanvasBounds(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -209,7 +209,7 @@ public class ImageTools : ToolBase
     }
 
     [McpServerTool(Name = "resolve_canvas_link"), Description("Resolve _inlink or _outlink canvas references")]
-    public Result<ResolveCanvasData> ResolveCanvasLink(
+    public string ResolveCanvasLink(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path to the canvas")] string path)
@@ -369,3 +369,4 @@ public class ResolveCanvasData
     public int Height { get; init; }
     public string? Base64Png { get; init; }
 }
+

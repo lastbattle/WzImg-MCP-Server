@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
 using WzImgMCP.Core;
 using WzImgMCP.Server;
@@ -14,7 +14,7 @@ public class FileTools : ToolBase
     public FileTools(WzSessionManager session) : base(session) { }
 
     [McpServerTool(Name = "init_data_source"), Description("Initialize an IMG filesystem data source from a directory path")]
-    public Result<DataSourceData> InitDataSource(
+    public string InitDataSource(
         [Description("Path to the extracted IMG filesystem directory (containing manifest.json)")] string basePath)
     {
         return ExecuteRaw(() =>
@@ -34,7 +34,7 @@ public class FileTools : ToolBase
     }
 
     [McpServerTool(Name = "scan_img_directories"), Description("Scan a directory for available IMG filesystem data sources")]
-    public Result<ScanData> ScanImgDirectories(
+    public string ScanImgDirectories(
         [Description("Directory path to scan")] string path,
         [Description("Scan subdirectories recursively (default: true)")] bool recursive = true)
     {
@@ -56,7 +56,7 @@ public class FileTools : ToolBase
     }
 
     [McpServerTool(Name = "get_data_source_info"), Description("Get information about the currently loaded data source")]
-    public Result<DataSourceInfoData> GetDataSourceInfo()
+    public string GetDataSourceInfo()
     {
         return Execute(() =>
         {
@@ -81,7 +81,7 @@ public class FileTools : ToolBase
     }
 
     [McpServerTool(Name = "list_categories"), Description("List all available categories in the current data source")]
-    public Result<CategoryListData> ListCategories()
+    public string ListCategories()
     {
         return Execute(() =>
         {
@@ -100,7 +100,7 @@ public class FileTools : ToolBase
     }
 
     [McpServerTool(Name = "list_images_in_category"), Description("List all .img files in a category")]
-    public Result<ImageListData> ListImagesInCategory(
+    public string ListImagesInCategory(
         [Description("Category name (e.g., 'Map', 'Mob', 'Npc')")] string category,
         [Description("Subdirectory within the category (optional)")] string? subdirectory = null)
     {
@@ -134,7 +134,7 @@ public class FileTools : ToolBase
     }
 
     [McpServerTool(Name = "get_cache_stats"), Description("Get cache statistics for the current data source")]
-    public Result<CacheStatsData> GetCacheStats()
+    public string GetCacheStats()
     {
         return Execute(() =>
         {
@@ -153,7 +153,7 @@ public class FileTools : ToolBase
     }
 
     [McpServerTool(Name = "clear_cache"), Description("Clear the loaded image cache")]
-    public Result<ClearCacheData> ClearCache()
+    public string ClearCache()
     {
         return Execute(() =>
         {
@@ -262,3 +262,4 @@ public class ClearCacheData
 {
     public int ClearedCount { get; init; }
 }
+

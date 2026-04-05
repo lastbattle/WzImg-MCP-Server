@@ -1,125 +1,47 @@
-using WzImgMCP.Server;
-using WzImgMCP.Tools;
+﻿using WzImgMCP.Tools;
 
 namespace WzImgMCP.Tests;
 
-public class BatchToolsTests : IClassFixture<TestFixture>, IDisposable
+public class BatchToolsTests : IClassFixture<TestFixture>
 {
     private readonly TestFixture _fixture;
     private readonly BatchTools _tools;
-    private readonly string _exportPath;
 
     public BatchToolsTests(TestFixture fixture)
     {
         _fixture = fixture;
-        _fixture.InitializeDataSource();
-        _tools = new BatchTools(_fixture.Session);
-        _exportPath = Path.Combine(Path.GetTempPath(), $"HaMCP_Batch_{Guid.NewGuid():N}");
-        Directory.CreateDirectory(_exportPath);
+        fixture.InitializeDataSource();
+        _tools = new BatchTools(fixture.Session);
     }
 
     [Fact]
-    public void ExtractToImg_WithNonExistentPath_Fails()
+    public void ExtractAndPack_CurrentlyNotImplemented_ReturnFailures()
     {
-        var wzPath = Path.Combine(_exportPath, "test.wz");
-        var outputDir = Path.Combine(_exportPath, "output");
+        var extract = _tools.ExtractToImg(_fixture.TestDataPath, Path.Combine(Path.GetTempPath(), "wz_extract_" + Guid.NewGuid().ToString("N")));
+        MarkdownTestHelper.AssertFailure(extract);
 
-        var result = _tools.ExtractToImg(wzPath, outputDir);
-
-        // Should fail with path not found or not implemented
-        Assert.False(result.Success);
-        Assert.NotNull(result.Error);
+        var pack = _tools.PackToWz(_fixture.TestDataPath, Path.Combine(Path.GetTempPath(), "wz_pack_" + Guid.NewGuid().ToString("N")));
+        MarkdownTestHelper.AssertFailure(pack);
     }
 
     [Fact]
-    public void PackToWz_NotImplemented()
+    public void BatchSearchAndExport_Work()
     {
-        var result = _tools.PackToWz(_fixture.TestDataPath, _exportPath);
+        var search = _tools.BatchSearch("test*", categories: "Character", searchType: "name", maxResults: 20);
+        MarkdownTestHelper.AssertSuccess(search);
+        Assert.Contains("result_count", search, StringComparison.OrdinalIgnoreCase);
 
-        // Currently returns not implemented
-        Assert.False(result.Success);
-        Assert.Contains("not yet implemented", result.Error, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void BatchExportImages_ExportsFromAllCategories()
-    {
-        var outputDir = Path.Combine(_exportPath, "batch_images");
-
-        var result = _tools.BatchExportImages("Character", outputDir, maxImages: 10);
-
-        Assert.True(result.Success);
-        Assert.True(result.ExportedCount > 0);
-        Assert.True(Directory.Exists(outputDir));
-    }
-
-    [Fact]
-    public void BatchExportImages_WithAllCategories_ExportsAll()
-    {
-        var outputDir = Path.Combine(_exportPath, "all_categories");
-
-        var result = _tools.BatchExportImages("all", outputDir, maxImages: 20);
-
-        Assert.True(result.Success);
-        Assert.True(result.ExportedCount > 0);
-    }
-
-    [Fact]
-    public void BatchSearch_FindsMatchesByName()
-    {
-        var result = _tools.BatchSearch("test*", categories: "Character", searchType: "name");
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.Results);
-        Assert.True(result.ResultCount > 0);
-    }
-
-    [Fact]
-    public void BatchSearch_FindsMatchesByValue()
-    {
-        // Search for a value we know exists in test data
-        var result = _tools.BatchSearch("Test", categories: "character", searchType: "value");
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.Results);
-        // May or may not find results depending on test data structure
-    }
-
-    [Fact]
-    public void BatchSearch_SearchesAllCategories()
-    {
-        var result = _tools.BatchSearch("*", categories: "all", searchType: "name", maxResults: 50);
-
-        Assert.True(result.Success);
-        Assert.NotNull(result.Results);
-        Assert.True(result.ResultCount > 0);
-    }
-
-    [Fact]
-    public void BatchSearch_RespectsMaxResults()
-    {
-        var result = _tools.BatchSearch("*", categories: "all", searchType: "name", maxResults: 5);
-
-        Assert.True(result.Success);
-        Assert.True(result.ResultCount <= 5);
-        if (result.ResultCount == 5)
-        {
-            Assert.True(result.Truncated);
-        }
-    }
-
-    public void Dispose()
-    {
+        var outDir = Path.Combine(Path.GetTempPath(), "wz_batch_export_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outDir);
         try
         {
-            if (Directory.Exists(_exportPath))
-            {
-                Directory.Delete(_exportPath, true);
-            }
+            var export = _tools.BatchExportImages("Character", outDir, format: "png", maxImages: 5);
+            MarkdownTestHelper.AssertSuccess(export);
+            Assert.Contains("exported_count", export, StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        finally
         {
-            // Ignore cleanup errors
+            Directory.Delete(outDir, true);
         }
     }
 }

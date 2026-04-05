@@ -222,7 +222,7 @@ public static class WzDataConverter
     public static int GetCanvasDelay(WzCanvasProperty canvas)
     {
         var delay = canvas["delay"] as WzIntProperty;
-        return delay?.Value ?? 100; // Default 100ms
+        return delay?.Value ?? 0; // Default 0
     }
 }
 

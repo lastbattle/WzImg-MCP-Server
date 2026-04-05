@@ -230,7 +230,7 @@ D:\Extract\v83\
 | Component | Description |
 |-----------|-------------|
 | `ToolBase` | Base class providing session validation and error handling |
-| `Result<T>` | Generic wrapper for tool responses (Success/Error + Data) |
+| `Result<T>` | Internal wrapper used by tools before Markdown rendering |
 | `WzSessionManager` | Manages loaded data sources and image cache |
 | `WzDataConverter` | Converts WZ properties to serializable formats |
 
@@ -238,23 +238,20 @@ D:\Extract\v83\
 
 ## Response Format
 
-All tools return `Result<T>` with consistent structure:
+All MCP tools now return **Markdown text** (plain `string` output) instead of JSON objects.
 
-```json
-{
-  "success": true,
-  "data": { ... },
-  "error": null
-}
+Typical success output:
+```md
+- success: true
+- data:
+  - category: Map
+  - image: 100000000.img
 ```
 
-On failure:
-```json
-{
-  "success": false,
-  "data": null,
-  "error": "Error message"
-}
+Typical failure output:
+```md
+- success: false
+- error: No data source initialized
 ```
 
 ---
@@ -285,8 +282,8 @@ Limits are configurable in `appsettings.json`:
     "ResponseLimits": {
       "MaxJsonResponseKB": 512,
       "MaxBase64ImageKB": 256,
-      "DefaultSearchResults": 50,
-      "DefaultPropertyPageSize": 100
+      "DefaultSearchResults": 20,
+      "DefaultPropertyPageSize": 50
     }
   }
 }
@@ -317,10 +314,10 @@ All tools accept `category` and `image` parameters unless noted. Paths use `/` s
 | Tool | Description |
 |------|-------------|
 | `get_subdirectories` | List subdirectories in a category |
-| `list_properties` | List child properties. Params: `path?`, `compact=true`, `offset=0`, `limit=100` (max 500) |
+| `list_properties` | List child properties. Params: `path?`, `compact=true`, `offset=0`, `limit=50` (max 500) |
 | `get_tree_structure` | Get property tree. Params: `path?`, `depth=2` (max 5), `maxChildrenPerNode=50` (max 200). Hard limit: 1000 nodes |
-| `search_by_name` | Search by name pattern (`*` wildcards). Params: `pattern`, `category?`, `image?`, `compact=true`, `maxResults=50` (max 200) |
-| `search_by_value` | Search by value. Params: `value`, `type?`, `category?`, `image?`, `compact=true`, `maxResults=50` (max 200) |
+| `search_by_name` | Search by name pattern (`*` wildcards). Params: `pattern`, `category?`, `image?`, `compact=true`, `maxResults=20` (max 200) |
+| `search_by_value` | Search by value. Params: `value`, `type?`, `category?`, `image?`, `compact=true`, `maxResults=20` (max 200) |
 | `get_property_path` | Get full path of a property |
 
 ---
@@ -336,7 +333,7 @@ All tools accept `category` and `image` parameters unless noted. Paths use `/` s
 | `get_float` | Get float value. Params: `path`, `defaultValue?` |
 | `get_vector` | Get vector (X, Y) |
 | `resolve_uol` | Resolve UOL link to target property |
-| `get_children` | Get child properties. Params: `path?`, `compact=true`, `offset=0`, `limit=100` (max 500) |
+| `get_children` | Get child properties. Params: `path?`, `compact=true`, `offset=0`, `limit=50` (max 500) |
 | `get_property_count` | Count child properties |
 | `iterate_properties` | Iterate with full metadata. Params: `path?`, `offset=0`, `limit=50` |
 | `get_properties_batch` | Batch get. Params: `requests[]` with `{category, image, path}` |
@@ -355,15 +352,25 @@ All tools accept `category` and `image` parameters unless noted. Paths use `/` s
 | `get_canvas_head` | Get head position for character rendering |
 | `get_canvas_bounds` | Get lt/rb bounds |
 | `get_canvas_delay` | Get frame delay in milliseconds |
-| `get_animation_frames` | Get frames. Params: `path`, `metadataOnly=true`, `offset=0`, `limit=10` (max 50). Returns `frameCount`, `totalDuration`, `hasMore` |
+| `get_animation_frames` | Get frames. Params: `path`, `metadataOnly=true`, `offset=0`, `limit=5` (max 50). Returns `frameCount`, `totalDuration`, `hasMore` |
 | `list_canvas_in_image` | List all canvases. Params: `maxDepth=10` |
 | `resolve_canvas_link` | Resolve `_inlink`/`_outlink` references |
 
-**Frame structure:**
-```json
-{ "index": 0, "width": 100, "height": 120, "origin": {"x": 50, "y": 100}, "delay": 120, "base64Png": null }
+**Frame structure (Markdown response):**
+```md
+- index: 0
+- width: 100
+- height: 120
+- origin:
+  - x: 50
+  - y: 100
+- delay: 120
 ```
-Set `metadataOnly=false` to include `base64Png` data.
+When `metadataOnly=false`, each frame also includes:
+```md
+- base64_png: <base64 data>
+```
+When `metadataOnly=true`, `base64_png` is omitted.
 
 ---
 
@@ -461,7 +468,7 @@ public class MyTools : ToolBase
     public MyTools(WzSessionManager session) : base(session) { }
 
     [McpServerTool(Name = "my_tool")]
-    public Result<MyData> MyTool(string param)
+    public string MyTool(string param)
     {
         return Execute(() =>
         {
@@ -485,7 +492,7 @@ public class MyTools : ToolBase
 ### Result Types
 
 ```csharp
-// Generic result for tools
+// Internal result wrapper used before Markdown conversion
 public class Result<T>
 {
     public bool Success { get; init; }

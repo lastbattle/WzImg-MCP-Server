@@ -15,25 +15,44 @@ public class ExportToolsTests : IClassFixture<TestFixture>
     }
 
     [Fact]
-    public void ExportToJson_Inline_Works()
+    public void ExportToMd_Inline_ReturnsMarkdown()
     {
-        var result = _tools.ExportToJson("Character", "Test.img", maxDepth: 3);
+        var result = _tools.ExportToMd("Character", "Test.img", maxDepth: 3);
         MarkdownTestHelper.AssertSuccess(result);
         Assert.Contains("node_count", result, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("markdown_data", result, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
-    public void ExportToXmlAndMediaFiles_Work()
+    public void ExportToMd_OutputPath_WritesMarkdownFile()
     {
         var dir = Path.Combine(Path.GetTempPath(), "wzimgmcp_exporttests_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         try
         {
-            var xmlPath = Path.Combine(dir, "out.xml");
-            var xml = _tools.ExportToXml("Character", "Test.img", xmlPath);
-            MarkdownTestHelper.AssertSuccess(xml);
-            Assert.True(File.Exists(xmlPath));
+            var requestedPath = Path.Combine(dir, "out.txt");
+            var result = _tools.ExportToMd("Character", "Test.img", outputPath: requestedPath);
+            var actualPath = Path.Combine(dir, "out.md");
 
+            MarkdownTestHelper.AssertSuccess(result);
+            Assert.Contains("out.md", result, StringComparison.OrdinalIgnoreCase);
+            Assert.False(File.Exists(requestedPath));
+            Assert.True(File.Exists(actualPath));
+            Assert.Contains("- name: Test.img", File.ReadAllText(actualPath), StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
+    public void ExportMediaFiles_Work()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "wzimgmcp_exporttests_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
             var pngPath = Path.Combine(dir, "out.png");
             var png = _tools.ExportPng("Character", "Test.img", "testCanvas", pngPath);
             MarkdownTestHelper.AssertSuccess(png);

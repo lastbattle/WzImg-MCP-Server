@@ -262,10 +262,16 @@ Tools support pagination and compact modes to minimize response size. These are 
 
 ### Pagination
 
-Paginated responses include `offset`, `limit`, `totalCount`, and `hasMore`:
+Paginated responses include `offset`, `limit`, `total_count`, and `has_more`:
 
-```json
-{ "totalCount": 150, "offset": 0, "limit": 50, "hasMore": true, "items": [...] }
+```md
+- total_count: 150
+- offset: 0
+- limit: 50
+- has_more: true
+- items:
+  -
+    - name: example
 ```
 
 ### Compact Mode
@@ -280,7 +286,7 @@ Limits are configurable in `appsettings.json`:
 {
   "HaMCP": {
     "ResponseLimits": {
-      "MaxJsonResponseKB": 512,
+      "MaxMarkdownResponseKB": 512,
       "MaxBase64ImageKB": 256,
       "DefaultSearchResults": 20,
       "DefaultPropertyPageSize": 50
@@ -389,8 +395,7 @@ When `metadataOnly=true`, `base64_png` is omitted.
 
 | Tool | Description |
 |------|-------------|
-| `export_to_json` | Export to JSON. Params: `path`, `maxDepth=5` (max 10), `outputPath?`. Error if >100KB without `outputPath` |
-| `export_to_xml` | Export to XML file. Params: `path`, `outputPath` |
+| `export_to_md` | Export property tree to Markdown and writes `.md` files. Params: `path`, `maxDepth=5` (max 10), `outputPath?`. Error if >100KB without `outputPath` |
 | `export_png` | Export canvas to PNG. Params: `path`, `outputPath` |
 | `export_mp3` | Export sound to MP3. Params: `path`, `outputPath` |
 | `export_all_images` | Batch export canvases. Params: `outputPath` |

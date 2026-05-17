@@ -1,7 +1,5 @@
 ﻿using System.ComponentModel;
 using ModelContextProtocol.Server;
-using System.Text.Json;
-using System.Xml.Linq;
 using WzImgMCP.Core;
 using WzImgMCP.Server;
 using WzImgMCP.Utils;
@@ -23,8 +21,8 @@ public class ExportTools
         _session = session;
     }
 
-    [McpServerTool(Name = "export_to_json"), Description("Export a property tree to JSON format. For large exports, outputPath is required. Max inline response is 100KB.")]
-    public string ExportToJson(
+    [McpServerTool(Name = "export_to_md"), Description("Export a property tree to Markdown format. For large exports, outputPath is required. Max inline response is 100KB.")]
+    public string ExportToMd(
         [Description("Category name")] string category,
         [Description("Image name")] string image,
         [Description("Property path (empty for entire image)")] string? path = null,
@@ -33,7 +31,7 @@ public class ExportTools
     {
         if (!_session.IsInitialized)
         {
-            return new ExportJsonResult { Success = false, Error = "No data source initialized" };
+            return new ExportMarkdownResult { Success = false, Error = "No data source initialized" };
         }
 
         try
@@ -53,116 +51,62 @@ public class ExportTools
                 var prop = img.GetFromPath(path);
                 if (prop == null)
                 {
-                    return new ExportJsonResult { Success = false, Error = $"Property not found: {path}" };
+                    return new ExportMarkdownResult { Success = false, Error = $"Property not found: {path}" };
                 }
                 target = prop;
             }
 
             int nodeCount = 0;
             const int maxNodes = 5000;
-            var json = ConvertToJson(target, 0, maxDepth, ref nodeCount, maxNodes);
-            var jsonString = JsonSerializer.Serialize(json, new JsonSerializerOptions { WriteIndented = true });
+            var exportData = ConvertToMarkdownModel(target, 0, maxDepth, ref nodeCount, maxNodes);
+            var markdownString = MarkdownResultFormatter.Format(exportData);
 
             const int maxInlineBytes = 100 * 1024; // 100KB max inline
 
             if (!string.IsNullOrEmpty(outputPath))
             {
+                outputPath = EnsureMarkdownOutputPath(outputPath);
                 var dir = Path.GetDirectoryName(outputPath);
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                 {
                     Directory.CreateDirectory(dir);
                 }
-                File.WriteAllText(outputPath, jsonString);
+                File.WriteAllText(outputPath, markdownString);
 
-                return new ExportJsonResult
+                return new ExportMarkdownResult
                 {
                     Success = true,
                     OutputPath = outputPath,
-                    Size = jsonString.Length,
+                    Size = markdownString.Length,
                     NodeCount = nodeCount,
                     Truncated = nodeCount >= maxNodes
                 };
             }
 
             // Check size for inline response
-            if (jsonString.Length > maxInlineBytes)
+            if (markdownString.Length > maxInlineBytes)
             {
-                return new ExportJsonResult
+                return new ExportMarkdownResult
                 {
                     Success = false,
-                    Error = $"Response too large ({jsonString.Length / 1024}KB). Please provide outputPath for exports > 100KB.",
-                    Size = jsonString.Length,
+                    Error = $"Response too large ({markdownString.Length / 1024}KB). Please provide outputPath for exports > 100KB.",
+                    Size = markdownString.Length,
                     NodeCount = nodeCount
                 };
             }
 
-            return new ExportJsonResult
+            return new ExportMarkdownResult
             {
                 Success = true,
-                JsonData = jsonString,
-                Size = jsonString.Length,
+                MarkdownData = markdownString,
+                Size = markdownString.Length,
                 NodeCount = nodeCount,
                 Truncated = nodeCount >= maxNodes
             };
         }
         catch (Exception ex)
         {
-            return new ExportJsonResult { Success = false, Error = ex.Message };
-        }
-    }
-
-    [McpServerTool(Name = "export_to_xml"), Description("Export a property tree to XML format")]
-    public string ExportToXml(
-        [Description("Category name")] string category,
-        [Description("Image name")] string image,
-        [Description("Output file path")] string outputPath,
-        [Description("Property path (empty for entire image)")] string? path = null,
-        [Description("Maximum depth to export")] int maxDepth = 10)
-    {
-        if (!_session.IsInitialized)
-        {
-            return new ExportXmlResult { Success = false, Error = "No data source initialized" };
-        }
-
-        try
-        {
-            var img = _session.GetImage(category, image);
-            WzObject target;
-
-            if (string.IsNullOrEmpty(path))
-            {
-                target = img;
-            }
-            else
-            {
-                var prop = img.GetFromPath(path);
-                if (prop == null)
-                {
-                    return new ExportXmlResult { Success = false, Error = $"Property not found: {path}" };
-                }
-                target = prop;
-            }
-
-            var xml = ConvertToXml(target, 0, maxDepth);
-            var doc = new XDocument(xml);
-
-            var dir = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
-            {
-                Directory.CreateDirectory(dir);
-            }
-            doc.Save(outputPath);
-
-            return new ExportXmlResult
-            {
-                Success = true,
-                OutputPath = outputPath,
-                Size = new FileInfo(outputPath).Length
-            };
-        }
-        catch (Exception ex)
-        {
-            return new ExportXmlResult { Success = false, Error = ex.Message };
+            return new ExportMarkdownResult { Success = false, Error = ex.Message };
         }
     }
 
@@ -488,7 +432,7 @@ public class ExportTools
         }
     }
 
-    private Dictionary<string, object?> ConvertToJson(WzObject obj, int depth, int maxDepth, ref int nodeCount, int maxNodes)
+    private Dictionary<string, object?> ConvertToMarkdownModel(WzObject obj, int depth, int maxDepth, ref int nodeCount, int maxNodes)
     {
         nodeCount++;
 
@@ -526,7 +470,7 @@ public class ExportTools
                 foreach (var child in children)
                 {
                     if (nodeCount >= maxNodes) break;
-                    childDict[child.Name] = ConvertToJson(child, depth + 1, maxDepth, ref nodeCount, maxNodes);
+                    childDict[child.Name] = ConvertToMarkdownModel(child, depth + 1, maxDepth, ref nodeCount, maxNodes);
                 }
                 result["_children"] = childDict;
             }
@@ -535,71 +479,26 @@ public class ExportTools
         return result;
     }
 
-    private XElement ConvertToXml(WzObject obj, int depth, int maxDepth)
+    private static string EnsureMarkdownOutputPath(string outputPath)
     {
-        var element = new XElement("property",
-            new XAttribute("name", obj.Name));
-
-        if (obj is WzImageProperty prop)
-        {
-            element.Add(new XAttribute("type", prop.PropertyType.ToString()));
-
-            var value = WzDataConverter.GetPropertyValue(prop);
-            if (value != null && !(value is CanvasValue) && !(value is SoundValue) && !(value is SubPropertyValue))
-            {
-                element.Add(new XAttribute("value", value.ToString() ?? ""));
-            }
-        }
-        else
-        {
-            element.Add(new XAttribute("type", obj.GetType().Name));
-        }
-
-        if (depth < maxDepth)
-        {
-            IEnumerable<WzImageProperty>? children = null;
-
-            if (obj is WzImage img)
-            {
-                children = img.WzProperties;
-            }
-            else if (obj is WzImageProperty imgProp)
-            {
-                children = imgProp.WzProperties;
-            }
-
-            if (children != null)
-            {
-                foreach (var child in children)
-                {
-                    element.Add(ConvertToXml(child, depth + 1, maxDepth));
-                }
-            }
-        }
-
-        return element;
+        return string.Equals(Path.GetExtension(outputPath), ".md", StringComparison.OrdinalIgnoreCase)
+            ? outputPath
+            : Path.ChangeExtension(outputPath, ".md");
     }
+
 }
 
 // Result types
 
-public class ExportJsonResult : MarkdownResultBase
+public class ExportMarkdownResult : MarkdownResultBase
 {
     public bool Success { get; set; }
     public string? Error { get; set; }
     public string? OutputPath { get; set; }
-    public string? JsonData { get; set; }
+    public string? MarkdownData { get; set; }
     public long Size { get; set; }
     public int NodeCount { get; set; }
     public bool Truncated { get; set; }
-}
-
-public class ExportXmlResult : MarkdownResultBase
-{
-    public bool Success { get; set; }
-    public string? Error { get; set; }
-    public string? OutputPath { get; set; }
-    public long Size { get; set; }
 }
 
 public class ExportPngResult : MarkdownResultBase
@@ -645,6 +544,3 @@ public class FailedItem
     public required string Path { get; set; }
     public required string Error { get; set; }
 }
-
-
-

@@ -91,7 +91,7 @@ public class IntegrationTests : IDisposable
         Skip.If(string.IsNullOrEmpty(_testMobImage), "No mob found");
 
         var export = new ExportTools(_session);
-        var result = export.ExportToJson("Mob", _testMobImage!, maxDepth: 10);
+        var result = export.ExportToMd("Mob", _testMobImage!, maxDepth: 10);
 
         if (result.Contains("- success: false", StringComparison.OrdinalIgnoreCase))
         {

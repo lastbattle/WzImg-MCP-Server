@@ -71,6 +71,27 @@ dotnet run --project WzImgMCP
 }
 ```
 
+**Codex Configuration** (`~/.codex/config.toml` or project-scoped `.codex/config.toml`):
+
+Codex supports MCP servers in the CLI and IDE extension. Both clients share `config.toml`, so you only need to configure the server once. See the [Codex MCP documentation](https://developers.openai.com/codex/mcp) for the full configuration reference.
+
+```toml
+[mcp_servers.wzimg]
+command = "dotnet"
+args = ["run", "--project", "E:/path/to/WzImg-MCP-Server/WzImgMCP.csproj"]
+
+[mcp_servers.wzimg.env]
+WZIMGMCP_DATA_PATH = "D:\\Extract\\v83"
+```
+
+You can also add the stdio server from the Codex CLI:
+
+```bash
+codex mcp add wzimg --env WZIMGMCP_DATA_PATH=D:/Extract/v83 -- dotnet run --project E:/path/to/WzImg-MCP-Server/WzImgMCP.csproj
+```
+
+In the Codex TUI, run `/mcp` to confirm that `wzimg` is available.
+
 ---
 
 ### Method 2: HTTP (Streamable HTTP)
@@ -99,6 +120,15 @@ dotnet run --project WzImgMCP -- --http --port 8080
     }
   }
 }
+```
+
+**Codex Configuration** (`~/.codex/config.toml` or project-scoped `.codex/config.toml`):
+
+Start the WzImg MCP Server separately, then point Codex at the HTTP endpoint:
+
+```toml
+[mcp_servers.wzimg]
+url = "http://127.0.0.1:13339/mcp"
 ```
 
 > **Note:** When using HTTP mode, the `WZIMGMCP_DATA_PATH` environment variable should be set when starting the server, not in the client config. The `env` block above is shown for reference but is only applied by the client when spawning the server (stdio mode). For HTTP mode, set it before running the server:
@@ -183,7 +213,7 @@ D:\Extract\v83\
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              AI Clients                                 │
 ├─────────────────┬─────────────────┬─────────────────────────────────────┤
-│  Claude Desktop │   Claude Code   │        Other MCP Clients            │
+│  Claude Desktop │  Claude/Codex   │        Other MCP Clients            │
 │   (subprocess)  │  (CLI/remote)   │      (custom applications)          │
 └────────┬────────┴────────┬────────┴─────────────────┬───────────────────┘
          │                 │                          │

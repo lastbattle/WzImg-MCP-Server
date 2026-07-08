@@ -38,7 +38,7 @@ public class ExportToolsTests : IClassFixture<TestFixture>
             Assert.Contains("out.md", result, StringComparison.OrdinalIgnoreCase);
             Assert.False(File.Exists(requestedPath));
             Assert.True(File.Exists(actualPath));
-            Assert.Contains("- name: Test.img", File.ReadAllText(actualPath), StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("- _name: Test.img", File.ReadAllText(actualPath), StringComparison.OrdinalIgnoreCase);
         }
         finally
         {

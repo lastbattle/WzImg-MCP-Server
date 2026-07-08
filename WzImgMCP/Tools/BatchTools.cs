@@ -3,6 +3,8 @@ using ModelContextProtocol.Server;
 using WzImgMCP.Core;
 using WzImgMCP.Server;
 using MapleLib.Img;
+using MapleLib.WzLib;
+using MapleLib.WzLib.Util;
 
 namespace WzImgMCP.Tools;
 
@@ -24,7 +26,11 @@ public class BatchTools
         [Description("Path to WZ file or directory containing WZ files")] string wzPath,
         [Description("Output directory for IMG filesystem")] string outputDir,
         [Description("Version key for WZ decryption (empty for auto-detect)")] string? versionKey = null,
-        [Description("Create version manifest")] bool createManifest = true)
+        [Description("Create version manifest")] bool createManifest = true,
+        [Description("Categories to extract (comma-separated, optional). For a single WZ file this is inferred from the file name.")] string? categories = null,
+        [Description("Version id for the extracted IMG filesystem manifest")] string? versionId = null,
+        [Description("Display name for the extracted IMG filesystem manifest")] string? displayName = null,
+        [Description("Resolve _inlink/_outlink canvas references during extraction")] bool resolveLinks = false)
     {
         try
         {
@@ -38,17 +44,52 @@ public class BatchTools
                 Directory.CreateDirectory(outputDir);
             }
 
-            var extractor = new WzExtractor();
-            var result = extractor.ExtractToImgFileSystem(wzPath, outputDir, versionKey, createManifest);
+            var mapleStoryPath = File.Exists(wzPath)
+                ? Path.GetDirectoryName(Path.GetFullPath(wzPath)) ?? Directory.GetCurrentDirectory()
+                : Path.GetFullPath(wzPath);
+            var categoriesToExtract = GetExtractionCategories(wzPath, categories);
+            var encryption = ResolveEncryption(versionKey, wzPath);
+            var effectiveVersionId = string.IsNullOrWhiteSpace(versionId)
+                ? $"extracted_{DateTime.UtcNow:yyyyMMddHHmmss}"
+                : versionId.Trim();
+            var effectiveDisplayName = string.IsNullOrWhiteSpace(displayName)
+                ? $"Extracted from {Path.GetFileName(mapleStoryPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar))}"
+                : displayName.Trim();
+
+            var extractor = new WzExtractionService();
+            var result = categoriesToExtract.Count > 0
+                ? extractor.ExtractAsync(
+                    mapleStoryPath,
+                    outputDir,
+                    effectiveVersionId,
+                    effectiveDisplayName,
+                    encryption,
+                    categoriesToExtract,
+                    resolveLinks).GetAwaiter().GetResult()
+                : extractor.ExtractAsync(
+                    mapleStoryPath,
+                    outputDir,
+                    effectiveVersionId,
+                    effectiveDisplayName,
+                    encryption,
+                    resolveLinks).GetAwaiter().GetResult();
+
+            var errors = result.CategoriesExtracted.Values
+                .SelectMany(c => c.Errors.Select(e => $"{c.CategoryName}: {e}"))
+                .ToList();
 
             return new ExtractResult
             {
-                Success = result.Success,
-                Error = result.ErrorMessage,
+                Success = result.Success && errors.Count == 0,
+                Error = result.ErrorMessage ?? (errors.Count > 0 ? "Extraction completed with category errors" : null),
                 OutputDirectory = outputDir,
-                CategoriesExtracted = result.CategoriesExtracted,
-                ImagesExtracted = result.ImagesExtracted,
-                Errors = result.Errors?.ToList()
+                CategoriesExtracted = result.CategoriesExtracted.Count,
+                ImagesExtracted = result.TotalImagesExtracted,
+                TotalSize = result.TotalSize,
+                DurationSeconds = result.Duration.TotalSeconds,
+                ManifestCreated = createManifest && File.Exists(Path.Combine(outputDir, "manifest.json")),
+                ExtractedCategories = result.CategoriesExtracted.Keys.OrderBy(c => c).ToList(),
+                Errors = errors
             };
         }
         catch (Exception ex)
@@ -62,7 +103,10 @@ public class BatchTools
         [Description("Path to IMG filesystem directory")] string imgPath,
         [Description("Output directory for WZ files")] string outputDir,
         [Description("WZ version to create")] int wzVersion = 83,
-        [Description("Category to pack (optional - packs all if not specified)")] string? category = null)
+        [Description("Category to pack (optional - packs all if not specified)")] string? category = null,
+        [Description("WZ encryption/version key (GMS, EMS, BMS, CLASSIC; empty uses manifest/default)")] string? versionKey = null,
+        [Description("Save as 64-bit WZ format")] bool saveAs64Bit = false,
+        [Description("Separate canvas data for 64-bit WZ format")] bool separateCanvas = false)
     {
         try
         {
@@ -76,17 +120,55 @@ public class BatchTools
                 Directory.CreateDirectory(outputDir);
             }
 
-            var packer = new WzPacker();
-            var result = packer.PackToWz(imgPath, outputDir, wzVersion, category);
+            var categoriesToPack = GetPackingCategories(imgPath, category);
+            if (categoriesToPack.Count == 0)
+            {
+                return new PackResult { Success = false, Error = $"No IMG categories found in {imgPath}" };
+            }
+
+            var existingWzFiles = Directory.EnumerateFiles(outputDir, "*.wz", SearchOption.TopDirectoryOnly)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var packer = new WzPackingService();
+            var result = packer.PackCategoriesAsync(
+                imgPath,
+                outputDir,
+                categoriesToPack,
+                saveAs64Bit,
+                overridePatchVersion: ToPatchVersion(wzVersion),
+                separateCanvas: separateCanvas,
+                overrideEncryption: ParseEncryption(versionKey)).GetAwaiter().GetResult();
+
+            var createdFiles = Directory.EnumerateFiles(outputDir, "*.wz", SearchOption.TopDirectoryOnly)
+                .Where(path => !existingWzFiles.Contains(path))
+                .OrderBy(path => path)
+                .ToList();
+            if (createdFiles.Count == 0)
+            {
+                createdFiles = result.CategoriesPacked.Values
+                    .Select(r => r.OutputFilePath)
+                    .Where(path => !string.IsNullOrWhiteSpace(path) && File.Exists(path))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(path => path)
+                    .ToList()!;
+            }
+
+            var errors = result.CategoriesPacked.Values
+                .SelectMany(c => c.Errors.Select(e => $"{c.CategoryName}: {e}"))
+                .ToList();
 
             return new PackResult
             {
-                Success = result.Success,
-                Error = result.ErrorMessage,
+                Success = result.Success && createdFiles.Count > 0 && errors.Count == 0,
+                Error = result.ErrorMessage ?? (createdFiles.Count == 0 ? "Packing completed without creating any WZ files" : null),
                 OutputDirectory = outputDir,
-                FilesCreated = result.FilesCreated,
-                TotalSize = result.TotalSize,
-                Errors = result.Errors?.ToList()
+                FilesCreated = createdFiles.Count,
+                TotalSize = createdFiles.Count > 0 ? createdFiles.Sum(path => new FileInfo(path).Length) : result.TotalOutputSize,
+                ImagesPacked = result.TotalImagesPacked,
+                DurationSeconds = result.Duration.TotalSeconds,
+                PackedCategories = result.CategoriesPacked.Keys.OrderBy(c => c).ToList(),
+                CreatedFiles = createdFiles,
+                Errors = errors
             };
         }
         catch (Exception ex)
@@ -378,53 +460,108 @@ public class BatchTools
             .Replace("\\?", ".") + "$";
         return new System.Text.RegularExpressions.Regex(regex, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
     }
-}
 
-// Placeholder classes for WZ extraction/packing (would need actual implementation in MapleLib)
-public class WzExtractor
-{
-    public ExtractionResult ExtractToImgFileSystem(string wzPath, string outputDir, string? versionKey, bool createManifest)
+    private static List<string> GetExtractionCategories(string wzPath, string? categories)
     {
-        // This would need to be implemented in MapleLib
-        // For now, return a not-implemented result
-        return new ExtractionResult
+        var parsed = ParseCategoryList(categories);
+        if (parsed.Count > 0)
         {
-            Success = false,
-            ErrorMessage = "WZ extraction not yet implemented. Use external tools or HaRepacker GUI."
-        };
-    }
-}
+            return parsed;
+        }
 
-public class WzPacker
-{
-    public PackingResult PackToWz(string imgPath, string outputDir, int wzVersion, string? category)
+        if (!File.Exists(wzPath))
+        {
+            return parsed;
+        }
+
+        var inferred = Path.GetFileNameWithoutExtension(wzPath);
+        return string.IsNullOrWhiteSpace(inferred) ? parsed : new List<string> { inferred };
+    }
+
+    private static List<string> GetPackingCategories(string imgPath, string? category)
     {
-        // This would need to be implemented in MapleLib
-        // For now, return a not-implemented result
-        return new PackingResult
+        var parsed = ParseCategoryList(category);
+        if (parsed.Count > 0)
         {
-            Success = false,
-            ErrorMessage = "WZ packing not yet implemented. Use external tools or HaRepacker GUI."
-        };
+            return parsed;
+        }
+
+        return Directory.EnumerateDirectories(imgPath)
+            .Where(dir => Directory.EnumerateFiles(dir, "*.img", SearchOption.AllDirectories).Any())
+            .Select(Path.GetFileName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Cast<string>()
+            .OrderBy(name => name)
+            .ToList();
     }
-}
 
-public class ExtractionResult : MarkdownResultBase
-{
-    public bool Success { get; set; }
-    public string? ErrorMessage { get; set; }
-    public int CategoriesExtracted { get; set; }
-    public int ImagesExtracted { get; set; }
-    public List<string>? Errors { get; set; }
-}
+    private static List<string> ParseCategoryList(string? categories)
+    {
+        if (string.IsNullOrWhiteSpace(categories) || categories.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            return new List<string>();
+        }
 
-public class PackingResult : MarkdownResultBase
-{
-    public bool Success { get; set; }
-    public string? ErrorMessage { get; set; }
-    public int FilesCreated { get; set; }
-    public long TotalSize { get; set; }
-    public List<string>? Errors { get; set; }
+        return categories.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static WzMapleVersion ResolveEncryption(string? versionKey, string wzPath)
+    {
+        var parsed = ParseEncryption(versionKey);
+        if (parsed.HasValue)
+        {
+            return parsed.Value;
+        }
+
+        var candidateWz = File.Exists(wzPath)
+            ? wzPath
+            : Directory.EnumerateFiles(wzPath, "*.wz", SearchOption.TopDirectoryOnly).FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(candidateWz))
+        {
+            try
+            {
+                return WzTool.DetectMapleVersion(candidateWz, out _);
+            }
+            catch
+            {
+                // Fall through to the common GMS default.
+            }
+        }
+
+        return WzMapleVersion.GMS;
+    }
+
+    private static WzMapleVersion? ParseEncryption(string? versionKey)
+    {
+        if (string.IsNullOrWhiteSpace(versionKey) ||
+            versionKey.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        if (Enum.TryParse<WzMapleVersion>(versionKey.Trim(), true, out var parsed) &&
+            parsed != WzMapleVersion.UNKNOWN &&
+            parsed != WzMapleVersion.GENERATE &&
+            parsed != WzMapleVersion.GETFROMZLZ)
+        {
+            return parsed;
+        }
+
+        throw new ArgumentException($"Unsupported WZ version key '{versionKey}'. Use GMS, EMS, BMS, CLASSIC, CUSTOM, or empty/auto.");
+    }
+
+    private static short ToPatchVersion(int wzVersion)
+    {
+        if (wzVersion < short.MinValue || wzVersion > short.MaxValue)
+        {
+            throw new ArgumentOutOfRangeException(nameof(wzVersion), "WZ version must fit in a signed 16-bit patch version.");
+        }
+
+        return (short)wzVersion;
+    }
 }
 
 // Result types
@@ -436,6 +573,10 @@ public class ExtractResult : MarkdownResultBase
     public string? OutputDirectory { get; set; }
     public int CategoriesExtracted { get; set; }
     public int ImagesExtracted { get; set; }
+    public long TotalSize { get; set; }
+    public double DurationSeconds { get; set; }
+    public bool ManifestCreated { get; set; }
+    public List<string>? ExtractedCategories { get; set; }
     public List<string>? Errors { get; set; }
 }
 
@@ -446,6 +587,10 @@ public class PackResult : MarkdownResultBase
     public string? OutputDirectory { get; set; }
     public int FilesCreated { get; set; }
     public long TotalSize { get; set; }
+    public int ImagesPacked { get; set; }
+    public double DurationSeconds { get; set; }
+    public List<string>? PackedCategories { get; set; }
+    public List<string>? CreatedFiles { get; set; }
     public List<string>? Errors { get; set; }
 }
 

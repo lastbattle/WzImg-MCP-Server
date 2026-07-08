@@ -15,13 +15,24 @@ public class BatchToolsTests : IClassFixture<TestFixture>
     }
 
     [Fact]
-    public void ExtractAndPack_CurrentlyNotImplemented_ReturnFailures()
+    public void Extract_InvalidPathAndPackImgFilesystem_ReturnExpectedResults()
     {
         var extract = _tools.ExtractToImg(_fixture.TestDataPath, Path.Combine(Path.GetTempPath(), "wz_extract_" + Guid.NewGuid().ToString("N")));
         MarkdownTestHelper.AssertFailure(extract);
 
-        var pack = _tools.PackToWz(_fixture.TestDataPath, Path.Combine(Path.GetTempPath(), "wz_pack_" + Guid.NewGuid().ToString("N")));
-        MarkdownTestHelper.AssertFailure(pack);
+        var outDir = Path.Combine(Path.GetTempPath(), "wz_pack_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(outDir);
+        try
+        {
+            var pack = _tools.PackToWz(_fixture.TestDataPath, outDir);
+            MarkdownTestHelper.AssertSuccess(pack);
+            Assert.Contains("files_created", pack, StringComparison.OrdinalIgnoreCase);
+            Assert.True(Directory.EnumerateFiles(outDir, "*.wz").Any());
+        }
+        finally
+        {
+            Directory.Delete(outDir, true);
+        }
     }
 
     [Fact]

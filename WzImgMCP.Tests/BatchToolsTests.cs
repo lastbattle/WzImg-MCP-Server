@@ -55,4 +55,27 @@ public class BatchToolsTests : IClassFixture<TestFixture>
             Directory.Delete(outDir, true);
         }
     }
+
+    [Fact]
+    public void PackToWz_AutoDiscoversLuaOnlyCategory()
+    {
+        var imgRoot = Path.Combine(Path.GetTempPath(), "wz_lua_img_" + Guid.NewGuid().ToString("N"));
+        var categoryDir = Path.Combine(imgRoot, "Etc");
+        var outDir = Path.Combine(Path.GetTempPath(), "wz_lua_pack_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(categoryDir);
+        Directory.CreateDirectory(outDir);
+        File.WriteAllText(Path.Combine(categoryDir, "Script.lua"), "return { value = 42 }\n");
+
+        try
+        {
+            var pack = _tools.PackToWz(imgRoot, outDir);
+            MarkdownTestHelper.AssertSuccess(pack);
+            Assert.True(File.Exists(Path.Combine(outDir, "Etc.wz")));
+        }
+        finally
+        {
+            Directory.Delete(imgRoot, true);
+            Directory.Delete(outDir, true);
+        }
+    }
 }

@@ -487,7 +487,7 @@ public class BatchTools
         }
 
         return Directory.EnumerateDirectories(imgPath)
-            .Where(dir => Directory.EnumerateFiles(dir, "*.img", SearchOption.AllDirectories).Any())
+            .Where(dir => WzPackingService.EnumeratePackableImageFiles(dir).Any())
             .Select(Path.GetFileName)
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .Cast<string>()
